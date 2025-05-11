@@ -7,46 +7,19 @@ This implements a chat interface that remembers conversation history.
 import os
 import sys
 import time
-from typing import List
 import argparse
 from dotenv import load_dotenv
 
-# No patch needed, we'll use proper CrewAI parameters
+# add lib to path
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'lib'))
 
-# Import our custom memory system
-from memory_system import MemoryManager
+# Import memento components
+import memento
+from memento.memory_system import MemoryManager, MementoMemory
 
-# Import CrewAI components
+# Import crewai components
 from crewai import Agent, Task, Crew, LLM
 from typing import List, Optional, Any, Dict, Union
-
-class MementoMemory:
-    """
-    Memory wrapper that adapts our custom memory system to be used with CrewAI.
-    """
-    def __init__(self, memory_manager: MemoryManager):
-        self.memory_manager = memory_manager
-        self.conversation_history = []
-        
-    def add(self, content: str, storage_type: str = "long"):
-        """Add content to our memory system"""
-        # Add to our custom memory system
-        self.memory_manager.add(content, storage_type)
-        self.conversation_history.append(content)
-        
-        # Keep conversation history manageable
-        if len(self.conversation_history) > 50:
-            # Only keep last 50 exchanges
-            self.conversation_history = self.conversation_history[-50:]
-        
-    def retrieve(self, query: str, k: int = 15):
-        """Retrieve from memory system with increased results"""
-        return self.memory_manager.retrieve(query, k=k)
-    
-    def get_all_memories(self):
-        """Get all recent memories"""
-        return self.conversation_history
-
 
 def create_chat_agent(model: str = "o3", memory_manager=None):
     """Create a chat agent using CrewAI"""

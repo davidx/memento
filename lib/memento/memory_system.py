@@ -3,8 +3,15 @@
 Vector-based memory system using Milvus for long-term storage.
 Short-term memory stays in RAM; long-term memories are stored as vectors with metadata.
 """
-
+from typing import List
+from dotenv import load_dotenv
+import sys
 import os
+
+
+from crewai import Agent, Task, Crew, LLM
+from typing import List, Optional, Any, Dict, Union
+
 import json
 import atexit
 import datetime
@@ -14,10 +21,9 @@ from collections import deque
 from typing import List, Dict, Any, Optional
 from langchain_openai import OpenAIEmbeddings
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
-from data_service import create_data_service, DataService
+from memento.data_service import create_data_service, DataService
 
-# ---------- Short-term Memory (Unchanged) -------------------------------------
-STM_FILE = "stm.json"
+STM_FILE = "./chat_memory/short_term_memory.db"
 
 class ShortTermMemory:
     def __init__(self, maxlen: int = 10, storage_type: str = "sqlite", path: str = STM_FILE):
@@ -336,3 +342,34 @@ if __name__ == "__main__":
     finally:
         # Clean up
         shutil.rmtree(test_dir)
+
+
+
+class MementoMemory:
+    """
+    Memory wrapper that adapts our custom memory system to be used with CrewAI.
+    """
+    def __init__(self, memory_manager: MemoryManager):
+        self.memory_manager = memory_manager
+        self.conversation_history = []
+        
+    def add(self, content: str, storage_type: str = "long"):
+        """Add content to our memory system"""
+        # Add to our custom memory system
+        self.memory_manager.add(content, storage_type)
+        self.conversation_history.append(content)
+        
+        # Keep conversation history manageable
+        if len(self.conversation_history) > 50:
+            # Only keep last 50 exchanges
+            self.conversation_history = self.conversation_history[-50:]
+        
+    def retrieve(self, query: str, k: int = 15):
+        """Retrieve from memory system with increased results"""
+        return self.memory_manager.retrieve(query, k=k)
+    
+    def get_all_memories(self):
+        """Get all recent memories"""
+        return self.conversation_history
+
+
