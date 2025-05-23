@@ -6,7 +6,7 @@ Memento is a Python-based memory management system designed for long-running AI 
 
 ```
 ┌───────────────────────────┐
-│  Agent (CrewAI/LangChain) │
+│         Agent            │
 └──────────┬────────────────┘
            │ read/write
 ┌──────────▼──────────┐
@@ -17,20 +17,20 @@ Memento is a Python-based memory management system designed for long-running AI 
         │  │                             │
 ┌───────▼──┴───────┐            ┌────────▼────────┐
 │ Short-Term       │            │ Long-Term       │
-│ (RAM - deque)    │            │ (Chroma vector) │
+│ (SQLite/RAM)     │            │ (Milvus)        │
 └────────┬─────────┘            └────────┬────────┘
          │                                │
 ┌────────▼────────┐             ┌────────▼────────┐
-│ Medium-Term     │             │  Embeddings     │
-│ (SQLite FTS5)   │             │  (OpenAI)       │
+│ Medium-Term     │             │  Vector Search  │
+│ (SQLite FTS5)   │             │  (Milvus)       │
 └─────────────────┘             └─────────────────┘
 ```
 
 ### Memory Types
 
-- **Short-Term Memory (STM)**: In-memory ring-buffer (deque) of the most recent interactions, persisted to JSON on shutdown.
+- **Short-Term Memory (STM)**: In-memory ring-buffer (deque) with SQLite persistence, configurable storage options.
 - **Medium-Term Memory (MTM)**: SQLite database with full-text search for efficient retrieval of older conversations.
-- **Long-Term Memory (LTM)**: Vector store using Chroma and OpenAI embeddings for semantic search and long-term retention.
+- **Long-Term Memory (LTM)**: Vector store using Milvus for efficient vector search and storage.
 
 ## Features
 
@@ -38,6 +38,8 @@ Memento is a Python-based memory management system designed for long-running AI 
 - **Persistence**: All memory layers are persisted to disk, allowing the agent to retain memory between restarts.
 - **Efficient Retrieval**: Combines exact text matching and semantic search for comprehensive memory recall.
 - **Crash-Safe**: Data is written to durable storage immediately after being added to memory.
+- **Batch Processing**: Efficient batch insertion of memories into vector storage.
+- **Configurable Storage**: Flexible storage options for short-term memory (SQLite, file, or memory).
 
 ## Getting Started
 
@@ -45,7 +47,7 @@ Memento is a Python-based memory management system designed for long-running AI 
 
 - Python 3.7+
 - Dependencies listed in `requirements.txt`
-- OpenAI API key (for embeddings)
+- Milvus server running (default: localhost:19530)
 
 ### Installation
 
@@ -54,17 +56,14 @@ Memento is a Python-based memory management system designed for long-running AI 
    ```
    pip install -r requirements.txt
    ```
-3. Set up your OpenAI API key:
-   ```
-   export OPENAI_API_KEY='your-api-key'
-   ```
+3. Ensure Milvus server is running (default: localhost:19530)
 
 ## Usage
 
 ### Basic Usage
 
 ```python
-from memory_system import MemoryManager
+from memento.memory_system import MemoryManager
 
 # Initialize the memory system
 memory = MemoryManager(root="agent_memory")
@@ -79,24 +78,20 @@ results = memory.retrieve("important fact", k=3)
 print(results)
 ```
 
-### Integration with Agents
+## Technology Stack
 
-See `agent_example.py` for a complete example of integrating the memory system with a LangChain agent.
-
-## Running the Tests
-
-```
-pytest test_memory_system.py
-```
+- **Core Framework**: Python 3.7+
+- **Vector Store**: Milvus
+- **Database**: SQLite with FTS5 for full-text search
+- **Testing**: pytest
 
 ## Potential Improvements
 
-- Support for local embedding models to reduce API costs
+- Enhanced multi-agent support via file-based LiteFS or a REST micro-service
 - Automatic memory importance scoring based on recency, relevance, and novelty
 - Periodic async flushing of short-term memory for increased durability
-- Multi-agent support via file-based LiteFS or a REST micro-service
+- Additional embedding model support for different use cases
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-# memento
